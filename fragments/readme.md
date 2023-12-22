@@ -1,5 +1,9 @@
-# {{repo_name}}#% if publish_on_pypi %# [![Package version](https://img.shields.io/pypi/v/{{pypi_project_name}}?label=PyPI)]({{pypi_url}}) [![Supported Python versions](https://img.shields.io/pypi/pyversions/{{pypi_project_name}}.svg?logo=python&label=Python)]({{pypi_url}})#% endif %#
-#%- if test_suite %#
+# {{repo_name}} [![skeleton](https://img.shields.io/badge/{{sref}}-skeleton?label=%F0%9F%92%80%20{{skeleton|urlencode}}&labelColor=black&color=grey&link={{skeleton_url|urlencode}})]({{srev}})
+#%- if publish_on_pypi %#
+[![Package version](https://img.shields.io/pypi/v/{{pypi_project_name}}?label=PyPI)]({{pypi_url}})
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/{{pypi_project_name}}.svg?logo=python&label=Python)]({{pypi_url}})
+#% endif %#
+#%- if tests %#
 [![Tests]({{repo_url}}/actions/workflows/test.yml/badge.svg)]({{repo_url}}/actions/workflows/test.yml)
 #%- endif %#
 #%- if public %#
@@ -7,7 +11,6 @@
 #%- endif %#
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Code style](https://img.shields.io/badge/code%20style-black-000000.svg?label=Code%20style)](https://github.com/psf/black)
 #%- if public %#
 [![License](https://img.shields.io/github/license/{{github_username}}/{{repo_name}}.svg?label=License)]({{repo_url}}/blob/HEAD/LICENSE)
 #%- endif %#
@@ -19,14 +22,12 @@
 #% endif %#
 #%- if publish_on_pypi %#
 # Installation
-If you want to…
 #% else %#
 # Installation for contributors
 #%- endif %#
 
 #% if publish_on_pypi %#
-## …use this tool in your project 💻
-#% if is_cli_tool -%#
+#%- if is_cli_tool %#
 To use this globally as a CLI tool, simply install it with [pipx](https://github.com/pypa/pipx)
 
 ```shell
@@ -39,7 +40,7 @@ You might also simply install it with pip:
 pip install {{pypi_project_name}}
 ```
 
-#% else -%#
+#%- else %#
 You might simply install it with pip:
 
 ```shell
@@ -54,7 +55,7 @@ If you use [Poetry](https://python-poetry.org/), then run:
 poetry add {{pypi_project_name}}
 ```
 
-## …contribute to [{{repo_name}}]({{repo_url}}) 🚀
+## For contributors
 #% endif %#
 #% include "fragments/guide.md" %#
 

@@ -1,4 +1,4 @@
-#%- if not bump_script -%#
+#%- if not upgrade_script -%#
 # (C) 2023–present Bartosz Sławecki (bswck)
 #
 # This script is run on every copier task event.
@@ -8,7 +8,7 @@
 # Usage:
 # $ copier copy --trust --vcs-ref HEAD gh:{{skeleton}} project
 # Later on, this script will be included in your project and run automatically within:
-# $ poe bump
+# $ poe upgrade
 
 # shellcheck shell=sh
 # shellcheck disable=SC1054,SC1073,SC2005,SC1083
@@ -42,7 +42,7 @@ setup_task_event() {
         then
             # Let the parent process know what is the new skeleton revision
             redis-cli set "$NEW_REF_KEY" "{{sref}}"
-            export TASK_EVENT="UPDATE"
+            export TASK_EVENT="UPGRADE"
             export BRANCH
             BRANCH="$(git rev-parse --abbrev-ref HEAD)"
         else
@@ -70,6 +70,7 @@ run_copier_hook() {
 
 setup_poetry_virtualenv() {
     # Set up poetry virtualenv. This is needed for copier to work flawlessly.
+    #% if not ctt_mode %#
     echo "Using Python version ${PYTHON_VERSION:=$(cat .python-version)}"
     poetry env use "$PYTHON_VERSION"
     echo "Running poetry installation for the $TASK_EVENT routine..."
@@ -78,6 +79,9 @@ setup_poetry_virtualenv() {
         poetry update || (echo "Failed to install dependencies." 1>&2 && exit 1)
     fi
     poetry lock --no-update
+    #% else %#
+    :
+    #% endif %#
 }
 
 after_copy() {
@@ -87,6 +91,7 @@ after_copy() {
     setup_poetry_virtualenv
     run_copier_hook
     echo
+    #% if not ctt_mode %#
     if test "$(git rev-parse --show-toplevel)" != "$(pwd)"
     then
         BRANCH="master"
@@ -108,8 +113,11 @@ after_copy() {
     REVISION_PARAGRAPH="Skeleton revision: {{skeleton_rev}}"
     echo
     git add .
-    echo "Press ENTER to commit the changes or CTRL+C to abort."
-    read -r _ || exit 1
+    if ! test "$CREATED"
+    then
+        echo "Press ENTER to commit the changes or CTRL+C to abort."
+        read -r _ || exit 1
+    fi
     git commit --no-verify -m "$COMMIT_MSG" -m "$REVISION_PARAGRAPH"
     echo
     if test "$CREATED"
@@ -121,8 +129,9 @@ after_copy() {
         echo "Reverted the latest commit to complete the integration process."
         echo "Patch your files and commit your changes to inform copier what needs to be kept."
         echo "Then run:"
-        echo "$ poe bump"
+        echo "$ poe upgrade"
     fi
+    #% endif %#
 }
 
 after_checkout_last_skeleton() {
@@ -154,6 +163,7 @@ after_checkout_project() {
 handle_task_event() {
     if test "$TASK_EVENT" = "COPY"
     then
+        clear
         echo "COPY ROUTINE: Copying the skeleton."
         echo "-----------------------------------"
         after_copy
@@ -161,6 +171,7 @@ handle_task_event() {
         echo "-----------------------------------"
         echo "COPY ROUTINE COMPLETE. ✅"
         echo
+        #% if not ctt_mode %#
         echo "Done! 🎉"
         echo "Your repository is now set up at {{repo_url}}"
         echo "$ cd $PROJECT_PATH"
@@ -168,36 +179,37 @@ handle_task_event() {
         echo "Happy coding!"
         echo "-- bswck"
         redis-cli del "$PROJECT_PATH_KEY" > /dev/null 2>&1
+        #% endif %#
     elif test "$TASK_EVENT" = "CHECKOUT_LAST_SKELETON"
     then
-        echo "UPDATE ALGORITHM [1/3]: Checked out the last used skeleton before update."
-        echo "-------------------------------------------------------------------------"
+        echo "UPGRADE ALGORITHM [1/3]: Checked out the last used skeleton before update."
+        echo "--------------------------------------------------------------------------"
         after_checkout_last_skeleton
         before_update
-        echo "-------------------------------------------------------------------------"
-        echo "UPDATE ALGORITHM [1/3] COMPLETE. ✅"
+        echo "--------------------------------------------------------------------------"
+        echo "UPGRADE ALGORITHM [1/3] COMPLETE. ✅"
         echo
-    elif test "$TASK_EVENT" = "UPDATE"
+    elif test "$TASK_EVENT" = "UPGRADE"
     then
-        echo "UPDATE ALGORITHM [2/3]: Overwrote the old skeleton before checking out the project."
-        echo "-----------------------------------------------------------------------------------"
+        echo "UPGRADE ALGORITHM [2/3]: Overwrote the old skeleton before checking out the project."
+        echo "------------------------------------------------------------------------------------"
         echo "Re-setting up the project..."
         after_update
         before_checkout_project
-        echo "-----------------------------------------------------------------------------------"
-        echo "UPDATE ALGORITHM [2/3] COMPLETE. ✅"
+        echo "------------------------------------------------------------------------------------"
+        echo "UPGRADE ALGORITHM [2/3] COMPLETE. ✅"
         echo
     elif test "$TASK_EVENT" = "CHECKOUT_PROJECT"
     then
-        echo "UPDATE ALGORITHM [3/3]: Checked out the project."
-        echo "------------------------------------------------"
+        echo "UPGRADE ALGORITHM [3/3]: Checked out the project."
+        echo "-------------------------------------------------"
         after_checkout_project
-        echo "------------------------------------------------"
-        echo "UPDATE ALGORITHM [3/3] COMPLETE. ✅"
+        echo "-------------------------------------------------"
+        echo "UPGRADE ALGORITHM [3/3] COMPLETE. ✅"
     fi
 }
 #%- endif %#
-#%- if bump_script %#
+#%- if upgrade_script %#
 # Automatically copied from {{skeleton_url}}/tree/{{sref}}/handle-task-event.sh
 #%- endif %#
 setup_gh() {
@@ -236,6 +248,6 @@ supply_smokeshow_key() {
         echo "Failed to create smokeshow secret." 1>&2
     fi
 }
-#%- if bump_script %#
+#%- if upgrade_script %#
 # End of copied code
 #%- endif -%#

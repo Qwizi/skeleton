@@ -62,7 +62,7 @@ SKELETON=gh:bswck/skeleton
 1. Happy coding!
 Your repository is on GitHub and has:
 - a release maker (`$ poe release`),
-- skeleton tool (`$ poe [bump|reanswer]`),
+- skeleton tool (`$ poe skeleton [upgrade|patch]`),
 - aesthetic badges in README.md,
 - an auto-generated LICENSE file,
 - a pre-configured `pyproject.toml` file,
@@ -93,7 +93,7 @@ Almost the same as above.
 1.  Run the following command:
 
     ```shell
-    poe bump
+    poe skeleton upgrade
     ```
 
 1.  Happy coding!
@@ -102,20 +102,41 @@ Almost the same as above.
 ## Bump the version of skeleton in your project
 
 ```shell
-poe bump
+poe skeleton upgrade
 ```
 
 Or, for a specific [ref](https://www.atlassian.com/git/tutorials/refs-and-the-reflog):
 
-```
-poe bump 1.0.0  # bump to 1.0.0
-poe bump dev  # bump to the latest commit on the dev branch
+```shell
+poe skeleton upgrade 1.0.0  # Upgrade to bswck/skeleton@1.0.0.
+poe skeleton upgrade dev  # Upgrade to the latest commit on the dev branch.
 ```
 
 ## Reconfigure the skeleton
 ```shell
-poe reanswer
+poe skeleton patch
 ```
+
+# How to develop
+
+1.  Install [Poetry](https://python-poetry.org/) and project dependencies
+
+    ```shell
+    sudo apt install pipx  # If you don't have pipx installed yet.
+    pipx install poetry
+    poetry install
+    ```
+1.  Install [pre-commit](https://pre-commit.com/) hooks
+
+    ```shell
+    pre-commit install --hook-type pre-commit --hook-type pre-push
+    ```
+
+1.  Test your skeleton
+
+    ```shell
+    ctt
+    ```
 
 # License
 This project is licensed under the terms of the [MIT License](/LICENSE).
@@ -127,10 +148,6 @@ This project is licensed under the terms of the [MIT License](/LICENSE).
 
 [Read more about copier.](https://copier.readthedocs.io/en/stable/)<br/>
 [Read more about jaraco/skeleton.](https://blog.jaraco.com/skeleton)
-
-# Documentation
-Coming soon.
-
 
 (C) 2023–present Bartosz Sławecki ([@bswck](https://github.com/bswck)).
 

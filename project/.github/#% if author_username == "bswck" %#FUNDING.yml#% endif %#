@@ -1,3 +1,0 @@
-# {{'project/.github/#% if author_username == "bswck" %#FUNDING.yml#% endif %#'|skeleton_notice(snref=snref, srev=srev)|line_prefix("# ")}}
-
-github: "bswck"

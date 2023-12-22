@@ -1,5 +1,8 @@
 from __future__ import annotations
+from abc import ABCMeta, abstractmethod
+from pathlib import Path
 from string import Template
+from subprocess import getoutput
 from typing import TYPE_CHECKING
 from urllib.parse import quote
 
@@ -44,8 +47,20 @@ SKELETON_NOTICE: Template = Template(
     "${srev}/${path}"
 )
 
+SKELETON_NOTICE_PATHLESS: Template = Template(
+    "This ${scope} was generated from a template file.\n"
+    "Instead of changing this particular file, you might want to alter the template "
+    "somewhere in:\n"
+    "${srev}"
+)
 
-def skeleton_notice(path: str, snref: str, srev: str, scope: str = "file") -> str:
+
+def skeleton_notice(path: str | None, snref: str, srev: str, scope: str = "file") -> str:
+    if path is None:
+        return SKELETON_NOTICE_PATHLESS.substitute(
+            scope=scope,
+            srev=srev,
+        )
     return SKELETON_NOTICE.substitute(
         scope=scope,
         snref=snref,
@@ -54,9 +69,15 @@ def skeleton_notice(path: str, snref: str, srev: str, scope: str = "file") -> st
     )
 
 
-class SkeletonContextHook(ContextHook):
+class InplaceContextHook(ContextHook, metaclass=ABCMeta):
     update = False
 
+    @abstractmethod
+    def hook(self, context: dict[str, object]) -> None:
+        ...
+
+
+class SkeletonContextHook(InplaceContextHook):
     def hook(self, context: dict[str, object]) -> None:
         context["skeleton"] = context["_src_path"].lstrip("gh:")
         context["skeleton_url"] = SKELETON_URL.substitute(context)
@@ -76,9 +97,7 @@ class SkeletonExtension(Extension):
         environment.filters["skeleton_notice"] = skeleton_notice
 
 
-class ProjectURLContextHook(ContextHook):
-    update = False
-
+class ProjectURLContextHook(InplaceContextHook):
     def hook(self, context: dict[str, object]) -> None:
         context["repo_url"] = REPO_URL.substitute(context)
         context["coverage_url"] = COVERAGE_URL.substitute(context)
@@ -94,9 +113,7 @@ def _generate_python_versions(python_version: str) -> Iterable[tuple[int, int]]:
         yield (major, minor)
 
 
-class PythonVersionsContextHook(ContextHook):
-    update = False
-
+class PythonVersionsContextHook(InplaceContextHook):
     def hook(self, context: dict[str, object]) -> None:
         context["latest_python_version"] = ".".join(map(str, LATEST_PYTHON_VERSION))
         context["python_versions"] = ", ".join(
@@ -105,9 +122,22 @@ class PythonVersionsContextHook(ContextHook):
         )
 
 
-class VisibilityContextHook(ContextHook):
-    update = False
-
+class VisibilityContextHook(InplaceContextHook):
     def hook(self, context: dict[str, object]) -> None:
         context["public"] = context["visibility"] == "public"
         context["private"] = not context["public"]
+
+
+class TemplateContextHook(InplaceContextHook):
+    def preprocess(self, source: str, name: str, filename: str | None = None) -> str:
+        self.filename = filename and Path(*Path(filename).parts[3:]).as_posix()
+        return source
+
+    def hook(self, context: dict[str, object]) -> None:
+        context["_origin"] = self.filename
+
+
+class GitContextHook(InplaceContextHook):
+    def hook(self, context: dict[str, object]) -> None:
+        context["git_username"] = getoutput("git config user.name")
+        context["git_email"] = getoutput("git config user.email")
